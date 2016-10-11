@@ -1,5 +1,6 @@
 package com.example.android.sunshine.app;
 
+import android.content.Intent;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -12,6 +13,7 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 
@@ -41,6 +43,7 @@ import java.util.List;
  */
 public class ForecastFragment extends Fragment {
 
+    private static final String EXTRA_TEXT = "forecast";
     private ArrayAdapter<String> mForecastAdapter;
     private ListView mListView;
 
@@ -66,11 +69,25 @@ public class ForecastFragment extends Fragment {
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        int id = item.getItemId();
+     /*   int id = item.getItemId();
         if(id == R.id.action_refresh){
             FetchWeatherTask weatherTask = new FetchWeatherTask();
             weatherTask.execute("94043");
             return true;
+        }*/
+        int id = item.getItemId();
+        switch (id){
+            case id == R.id.action_refresh{
+                FetchWeatherTask weatherTask = new FetchWeatherTask();
+                weatherTask.execute("94043");
+                return true;
+            }
+
+            case id == R.id.action_settings{
+                Intent intent = new Intent("SettingsActivity");
+                startActivity(intent);
+                return true;
+            }
         }
         return super.onOptionsItemSelected(item);
     }
@@ -92,6 +109,17 @@ public class ForecastFragment extends Fragment {
 
         mListView = (ListView) rootView.findViewById(R.id.listview_forecast);
         mListView.setAdapter(mForecastAdapter);
+
+        mListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
+                String selectedForecastItem = mForecastAdapter.getItem(i);
+                Intent intent = new Intent(getActivity(), DetailActivity.class)
+                        .putExtra(EXTRA_TEXT, selectedForecastItem);
+
+                startActivity(intent);
+            }
+        });
 
         return rootView;
     }
