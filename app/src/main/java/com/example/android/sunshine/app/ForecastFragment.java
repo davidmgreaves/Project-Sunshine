@@ -1,9 +1,11 @@
 package com.example.android.sunshine.app;
 
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.support.v4.app.Fragment;
 import android.text.format.Time;
 import android.util.Log;
@@ -29,8 +31,7 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.Date;
 
 
 /**
@@ -57,6 +58,12 @@ public class ForecastFragment extends Fragment {
     }
 
     @Override
+    public void onStart() {
+        super.onStart();
+        updateWeather();
+    }
+
+    @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setHasOptionsMenu(true);
@@ -69,28 +76,29 @@ public class ForecastFragment extends Fragment {
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-     /*   int id = item.getItemId();
-        if(id == R.id.action_refresh){
-            FetchWeatherTask weatherTask = new FetchWeatherTask();
-            weatherTask.execute("94043");
-            return true;
-        }*/
         int id = item.getItemId();
+        if(id == R.id.action_refresh){
+            updateWeather();
+            return true;
+        }
+
+      /*  int id = item.getItemId();
+
         switch (id){
-            case id == R.id.action_refresh{
+            case R.id.action_refresh:
                 FetchWeatherTask weatherTask = new FetchWeatherTask();
                 weatherTask.execute("94043");
                 return true;
-            }
 
-            case id == R.id.action_settings{
+            case R.id.action_settings:
                 Intent intent = new Intent("SettingsActivity");
                 startActivity(intent);
                 return true;
-            }
-        }
+
+        }*/
         return super.onOptionsItemSelected(item);
     }
+
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -99,13 +107,9 @@ public class ForecastFragment extends Fragment {
 
         View rootView = inflater.inflate(R.layout.fragment_main, container, false);
 
-        String[] forecastArray = new String[] {"Today - Sunny - 89 / 63",
-                "Tomorrow - Foggy - 70 / 46", "Weds - Cloudy - 72 / 63", "Thurs - Rainy - 64 / 51",
-                "Fri - Foggy - 70 / 46", "Sat - Sunny - 76 / 58"};
-
-        List<String> weekForecast = new ArrayList<>(Arrays.asList(forecastArray));
         mForecastAdapter = new ArrayAdapter<String>(getActivity(),
-                R.layout.list_item_forecast, R.id.list_item_forecast_textview, weekForecast);
+                R.layout.list_item_forecast, R.id.list_item_forecast_textview,
+                new ArrayList<String>());
 
         mListView = (ListView) rootView.findViewById(R.id.listview_forecast);
         mListView.setAdapter(mForecastAdapter);
@@ -122,6 +126,15 @@ public class ForecastFragment extends Fragment {
         });
 
         return rootView;
+    }
+
+
+    private void updateWeather() {
+        FetchWeatherTask weatherTask = new FetchWeatherTask();
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getActivity());
+        String location = prefs.getString(getString(R.string.pref_location_key),
+                getString(R.string.pref_location_default));
+        weatherTask.execute(location);
     }
 
     public class FetchWeatherTask extends AsyncTask <String, Void, String[]>{
@@ -290,6 +303,21 @@ public class ForecastFragment extends Fragment {
         // strip decimals for presentation purposes
         private String formatHighLows(double high, double low) {
 
+            SharedPreferences sharedPrefs =
+                    PreferenceManager.getDefaultSharedPreferences(getActivity());
+
+            String unitType = sharedPrefs.getString(
+                    getString(R.string.pref_units_key),
+                    getString(R.string.pref_units_metric));
+
+            if(unitType.equals(getString(R.string.pref_units_imperial))){
+                high = (high * 1.8) + 32;
+                low = (low * 1.8) + 32;
+            }
+            else if(!unitType.equals(getString(R.string.pref_units_metric))){
+                Log.d(TAG, "Unit type not found" + unitType);
+            }
+
             long roundedHigh = Math.round(high);
             long roundedLow = Math.round(low);
 
@@ -301,6 +329,7 @@ public class ForecastFragment extends Fragment {
         // milliseconds so that it can be converted to a valid date using the format(time_ method
         private String getReadableDateString(long time) {
 
+            Date date = new Date(time * 1000);
             SimpleDateFormat shortenedDateFormat = new SimpleDateFormat("EEE MMM dd");
             return  shortenedDateFormat.format(time);
         }
